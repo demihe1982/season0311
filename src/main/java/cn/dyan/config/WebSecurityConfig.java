@@ -1,11 +1,17 @@
 package cn.dyan.config;
 
+import cn.dyan.security.MyAccessDecisionManager;
+import cn.dyan.security.MyFilterInvocationSecurityMetadataSource;
+import cn.dyan.security.MyFilterSecurityInterceptor;
 import cn.dyan.service.CustomUserDetailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.access.ExceptionTranslationFilter;
+import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 
 import javax.sql.DataSource;
 
@@ -24,6 +30,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private DataSource dataSource;
 
+    @Autowired
+    private MyAccessDecisionManager accessDecisionManager;
+
+    @Autowired
+    private MyFilterInvocationSecurityMetadataSource securityMetadataSource;
+
     @Bean
     public UserDetailsService userDetailsService(){
         CustomUserDetailService manager = new CustomUserDetailService();
@@ -31,6 +43,27 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         manager.setEnableGroups(true);
         return manager;
     }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                .anyRequest().authenticated()
+                .and()
+                .formLogin().and()
+                .addFilterBefore(getFilterSecurityInterceptor(),FilterSecurityInterceptor.class)
+                .httpBasic();
+
+    }
+
+    private MyFilterSecurityInterceptor getFilterSecurityInterceptor(){
+        MyFilterSecurityInterceptor filterSecurityInterceptor = new MyFilterSecurityInterceptor();
+        filterSecurityInterceptor.setAccessDecisionManager(accessDecisionManager);
+        filterSecurityInterceptor.setSecurityMetadataSource(securityMetadataSource);
+        return filterSecurityInterceptor;
+    }
+
+
 
 
 }
