@@ -2,11 +2,11 @@ package cn.dyan.security;
 
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.access.SecurityConfig;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.FilterInvocation;
 import org.springframework.security.web.access.intercept.FilterInvocationSecurityMetadataSource;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
@@ -14,19 +14,21 @@ import java.util.*;
 /**
  * init role match menu url
  */
-@Component
 public class MyFilterInvocationSecurityMetadataSource implements FilterInvocationSecurityMetadataSource {
 
-    private final Map<RequestMatcher, Collection<ConfigAttribute>> requestMap;
+    private Map<RequestMatcher, Collection<ConfigAttribute>> requestMap;
 
-    public MyFilterInvocationSecurityMetadataSource(){
+    private final FilterInvocationSecurityMetadataSource metadataSource;
+
+    public MyFilterInvocationSecurityMetadataSource(FilterInvocationSecurityMetadataSource metadataSource){
+        this.metadataSource = metadataSource;
         requestMap = new HashMap<RequestMatcher, Collection<ConfigAttribute>>();
         List<ConfigAttribute> configAttributes = new ArrayList<ConfigAttribute>();
         configAttributes.add(new SecurityConfig("ROLE_ADMIN"));
         requestMap.put(new AntPathRequestMatcher("/admin/**"),configAttributes);
-        configAttributes = new ArrayList<ConfigAttribute>();
-        configAttributes.add(new SecurityConfig("ROLE_USER"));
-        requestMap.put(new AntPathRequestMatcher("/user/**"),configAttributes);
+        List<ConfigAttribute> configAttributes1 = new ArrayList<ConfigAttribute>();
+        configAttributes1.add(new SecurityConfig("ROLE_USER"));
+        requestMap.put(new AntPathRequestMatcher("/user/**"),configAttributes1);
     }
 
     public Collection<ConfigAttribute> getAllConfigAttributes() {
@@ -42,11 +44,17 @@ public class MyFilterInvocationSecurityMetadataSource implements FilterInvocatio
 
     public Collection<ConfigAttribute> getAttributes(Object object) {
         final HttpServletRequest request = ((FilterInvocation) object).getRequest();
-        for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : requestMap
-                .entrySet()) {
-            if (entry.getKey().matches(request)) {
-                return entry.getValue();
+        Collection<ConfigAttribute> configAttributes = metadataSource.getAttributes(object);
+        configAttributes= Optional.ofNullable(configAttributes).orElse(Collections.EMPTY_LIST);
+        if(configAttributes.size() != 1){
+            for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : requestMap
+                    .entrySet()) {
+                if (entry.getKey().matches(request)) {
+                    return entry.getValue();
+                }
             }
+        }else{
+            return configAttributes;
         }
         return null;
     }

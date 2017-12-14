@@ -7,6 +7,7 @@ import org.springframework.security.authentication.InsufficientAuthenticationExc
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,6 +29,9 @@ public class MyAccessDecisionManager implements AccessDecisionManager {
             ConfigAttribute ca = iterator.next();
             String needRole = ca.getAttribute();
 
+            if(StringUtils.isEmpty(needRole)){
+                continue;
+            }
             //Authentication current user
             for(GrantedAuthority ga : authentication.getAuthorities()){
                 //use resource role match current user role
@@ -36,7 +40,7 @@ public class MyAccessDecisionManager implements AccessDecisionManager {
                 }
             }
         }
-        throw new AccessDeniedException("");
+        throw new AccessDeniedException("Access is denied");
 
     }
 
