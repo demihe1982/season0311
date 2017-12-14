@@ -20,15 +20,15 @@ public class MyFilterInvocationSecurityMetadataSource implements FilterInvocatio
 
     private final FilterInvocationSecurityMetadataSource metadataSource;
 
-    public MyFilterInvocationSecurityMetadataSource(FilterInvocationSecurityMetadataSource metadataSource){
+    public MyFilterInvocationSecurityMetadataSource(FilterInvocationSecurityMetadataSource metadataSource) {
         this.metadataSource = metadataSource;
         requestMap = new HashMap<RequestMatcher, Collection<ConfigAttribute>>();
         List<ConfigAttribute> configAttributes = new ArrayList<ConfigAttribute>();
         configAttributes.add(new SecurityConfig("ROLE_ADMIN"));
-        requestMap.put(new AntPathRequestMatcher("/admin/**"),configAttributes);
+        requestMap.put(new AntPathRequestMatcher("/admin/**"), configAttributes);
         List<ConfigAttribute> configAttributes1 = new ArrayList<ConfigAttribute>();
         configAttributes1.add(new SecurityConfig("ROLE_USER"));
-        requestMap.put(new AntPathRequestMatcher("/user/**"),configAttributes1);
+        requestMap.put(new AntPathRequestMatcher("/user/**"), configAttributes1);
     }
 
     public Collection<ConfigAttribute> getAllConfigAttributes() {
@@ -44,19 +44,13 @@ public class MyFilterInvocationSecurityMetadataSource implements FilterInvocatio
 
     public Collection<ConfigAttribute> getAttributes(Object object) {
         final HttpServletRequest request = ((FilterInvocation) object).getRequest();
-        Collection<ConfigAttribute> configAttributes = metadataSource.getAttributes(object);
-        configAttributes= Optional.ofNullable(configAttributes).orElse(Collections.EMPTY_LIST);
-        if(configAttributes.size() != 1){
-            for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : requestMap
-                    .entrySet()) {
-                if (entry.getKey().matches(request)) {
-                    return entry.getValue();
-                }
+        for (Map.Entry<RequestMatcher, Collection<ConfigAttribute>> entry : requestMap
+                .entrySet()) {
+            if (entry.getKey().matches(request)) {
+                return entry.getValue();
             }
-        }else{
-            return configAttributes;
         }
-        return null;
+        return metadataSource.getAttributes(object);
     }
 
     @Override
